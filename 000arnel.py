@@ -108,8 +108,8 @@ class Reddit(object):
                     else:
                         self.links.remove(x)
                 except:
-                    # self.links.remove(x)
-                    print(x, 'not working!')
+                    print('remove:', x)
+                    self.links.remove(x)
            
 
     # -------------------------------------------------- #
