@@ -10,7 +10,7 @@ print('\n\n')
 # -------------------------------------------------- #
 
 class Reddit(object):
-    def __init__(self, subreddit='hotwife', limits=50):
+    def __init__(self, subreddit=0, limits=20):
         '''
         This will ask for the subreddit
             
@@ -79,33 +79,37 @@ class Reddit(object):
         for x in self.links:
             imagelist = []
             mp4list = []
-            if 'eroshare' in x:
-                print('processing: ', x)
-                # try:
-                r = requests.get(x)
-                source = r.text
-                soup = BeautifulSoup(source)
-                # for y in soup.find_all('div', {'class':'blurred-bg'}):
-                #     #print(str(y).split('//')[1][:-10])
-                #     imagelist.append('https://' + str(y).split('//')[1][:10] for x in soup.find_all('div', {'class':'blurred-bg'}))
-                #     print(imagelist)
-                if len(imagelist) < 1:
-                    mp4list = [y.get('src') for y in soup.find_all('div')[0].find_all('source', {'data-default':'true'})]
-                    print(mp4list)
-                # if 'mp4' in source:
-                #     source = source.split('.mp4')[0].split('src="')[-1] + '.mp4'
-                #     self.links[self.links.index(x)] = source
-                else:
-                    # mp4list = [x.get('src') for x in soup.find_all('div')[0].find_all('source', {'data-default':'true'})]
-                    # self.links[self.links.index(x)] = x.replace('eroshare.com/i/','i.eroshare.com/') + '.jpg'
-                    # print(len(mp4list), mp4list)
-                # except:
-                    self.links.remove(x)
-        # # print(len(mp4list), mp4list)           
-        # print(len(imagelist), imagelist)
+            if 'eroshare' in x and 'mp4' not in x and 'jpg' not in x:
+                print('processing:', x)
 
+                try:
+                    r = requests.get(x)
+                    source = r.text
+                    soup = BeautifulSoup(source, 'html.parser')
 
+                    if 'mp4' in source:
+                        soup1 = soup.find_all('div')[0].find_all('source', {'data-default':'true'})
+                        mp4list = [y.get('src') for y in soup1]
+                        if len(mp4list) > 1:
+                            album_name = x.split('/')[-1]
+                            self.links[self.links.index(x)] = [album_name, mp4list]
+                        else:
+                            self.links[self.links.index(x)] = mp4list[0]
 
+                    elif 'jpg' in source:
+                        for y in soup.find_all('div', {'class':'blurred-bg'}):
+                            imagelist.append('https://' + str(y).split('//')[1][:-10])
+                        if len(imagelist) > 1:
+                            album_name = x.split('/')[-1]
+                            self.links[self.links.index(x)] = [album_name, imagelist]
+                        else:
+                            self.links[self.links.index(x)] = imagelist[0]
+
+                    else:
+                        self.links.remove(x)
+                except:
+                    # self.links.remove(x)
+                    print(x, 'not working!')
            
 
     # -------------------------------------------------- #
@@ -126,7 +130,7 @@ class Reddit(object):
                     x1 = x
                 id = x1.split('/')[-1]
                 url = 'https://api.imgur.com/3/image/%s' % id
-                print(url)
+                print('processing:', url)
                 r = requests.get(url, headers=headers)
                 j = json.loads(r.text)
                 try:
@@ -142,12 +146,12 @@ class Reddit(object):
                     x1 = x
                 id = x1.split('/')[-1]
                 url = 'https://api.imgur.com/3/album/%s' % id
-                print(url)
+                print('processing:', url)
                 r = requests.get(url, headers=headers)
                 j = json.loads(r.text)
-                album_name = j['data']['cover']
-                images = [x['link'] for x in j['data']['images']]
                 try:
+                    album_name = j['data']['cover']
+                    images = [x['link'] for x in j['data']['images']]
                     self.links[self.links.index(x)] = [album_name, images]
                 except:
                     print('album remove:',x)
@@ -196,3 +200,4 @@ class Reddit(object):
 # removelink(links)
 # fiximgur(links)
 # fixerosh(links)
+arnel = Reddit('hotwife', 30)
