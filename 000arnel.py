@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import json, praw, requests, wget
+from bs4 import BeautifulSoup
 
 
 print('\n\n')
@@ -9,14 +10,15 @@ print('\n\n')
 # -------------------------------------------------- #
 
 class Reddit(object):
-    def __init__(self, subreddit=0, limits=0):
+    def __init__(self, subreddit='hotwife', limits=50):
         '''
         This will ask for the subreddit
             
         '''
-        self.links = []
-        self.subreddit = subreddit
-        self.limits = limits
+        self.links        = []
+        self.deletedlinks = []
+        self.subreddit    = subreddit
+        self.limits       = limits
 
         if self.subreddit == 0:
             self.subreddit = input('Subreddit: ')
@@ -59,21 +61,14 @@ class Reddit(object):
         This will remove links not:
         eroshare, imgur, gfycat, and not .jpg
         '''
-        rm = True
+        validlinks = ['eroshare','imgur', 'gfycat','.jpg','.png','.gif','.gifv']
+
         for y in range(5):
             for x in self.links:
-                if 'eroshare' in x: rm = False
-                if 'imgur'    in x: rm = False
-                if 'gfycat'   in x: rm = False
-                if '.jpg'     in x: rm = False
-                if '.png'     in x: rm = False
-                if '.gif'     in x: rm = False
-                if '.gifv'    in x: rm = False
-                if rm == True:
-                    print('Deleting: ' + x)
+                if not any(y in x for y in validlinks):
+                    print ('delete: ' + x)
+                    self.deletedlinks.append(x)
                     self.links.remove(x)
-                rm = True
-
 
     # -------------------------------------------------- #
 
@@ -82,18 +77,36 @@ class Reddit(object):
         This will fix the eroshare links
         '''
         for x in self.links:
+            imagelist = []
+            mp4list = []
             if 'eroshare' in x:
-                try:
-                    r = requests.get(x)
-                    source = r.text
-                    if 'mp4' in source:
-                        source = source.split('.mp4')[0].split('src="')[-1] + '.mp4'
-                        self.links[self.links.index(x)] = source
-                    else:
-                        self.links[self.links.index(x)] = x.replace('eroshare.com/i/','i.eroshare.com/') + '.jpg'
-                    #print(source)
-                except:
+                print('processing: ', x)
+                # try:
+                r = requests.get(x)
+                source = r.text
+                soup = BeautifulSoup(source)
+                # for y in soup.find_all('div', {'class':'blurred-bg'}):
+                #     #print(str(y).split('//')[1][:-10])
+                #     imagelist.append('https://' + str(y).split('//')[1][:10] for x in soup.find_all('div', {'class':'blurred-bg'}))
+                #     print(imagelist)
+                if len(imagelist) < 1:
+                    mp4list = [y.get('src') for y in soup.find_all('div')[0].find_all('source', {'data-default':'true'})]
+                    print(mp4list)
+                # if 'mp4' in source:
+                #     source = source.split('.mp4')[0].split('src="')[-1] + '.mp4'
+                #     self.links[self.links.index(x)] = source
+                else:
+                    # mp4list = [x.get('src') for x in soup.find_all('div')[0].find_all('source', {'data-default':'true'})]
+                    # self.links[self.links.index(x)] = x.replace('eroshare.com/i/','i.eroshare.com/') + '.jpg'
+                    # print(len(mp4list), mp4list)
+                # except:
                     self.links.remove(x)
+        # # print(len(mp4list), mp4list)           
+        # print(len(imagelist), imagelist)
+
+
+
+           
 
     # -------------------------------------------------- #
 
@@ -103,8 +116,10 @@ class Reddit(object):
         '''
         headers = {'Authorization': 'Client-ID 3d8f01808063b93'}
 
+        validlinks = ['/a/','/gallery/','.webm','.gif','.gifv','.png','.jpg']
+
         for x in self.links:
-            if 'imgur' in x and '/a/' not in x and '/gallery/' not in x and '.webm' not in x and '.gif' not in x and '.gifv' not in x and '.png' not in x and '.jpg' not in x: #image
+            if 'imgur'in x and not any(y in x for y in validlinks):
                 if x[-1] == '/':
                     x1 = x[:-1]
                 else:
