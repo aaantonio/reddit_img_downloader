@@ -10,7 +10,7 @@ print('\n\n')
 # -------------------------------------------------- #
 
 class Reddit(object):
-    def __init__(self, subreddit=0, limits=20):
+    def __init__(self, subreddit=0, limits=0):
         '''
         This will ask for the subreddit
             
@@ -26,7 +26,9 @@ class Reddit(object):
             self.limits = input('limit: ')
 
         try:
-            self.limits = int(limits)
+            self.limits = int(self.limits)
+            if self.limits == 0:
+                self.limits = 20
         except:
             self.limits = 20
 
@@ -114,6 +116,25 @@ class Reddit(object):
 
     # -------------------------------------------------- #
 
+    def fix500px(self):
+        '''
+        This will fix 500px links
+        '''
+        for x in self.links:
+            print(x)
+            if '500px' in x:
+                try:
+                    print('Processing:', x)
+                    r = requests.get(x)
+                    source = r.content.decode('utf8')
+                    soup = BeautifulSoup(source, 'html.parser')
+                    img = soup.find_all('meta', {'property': 'og:image'})[0].get('content')
+                    self.links[self.links.index(x)] = str(img)
+                except:
+                    print('remove:', x)
+                    self.links.remove(self.links.index(x))
+        pass
+
     def fiximgur(self):
         '''
         This will fix imgur links
@@ -171,22 +192,26 @@ class Reddit(object):
         '''
         This will download links
         '''
+        try:
+            wget.os.mkdir('./Reddit')
+        except:
+            pass
         for x in self.links:
             if type(x) != list: #single file
                 filename = x.split('/')[-1]
-                if not filename in wget.os.listdir('.'):
+                if not filename in wget.os.listdir('Reddit/.'):
                     print(' Downloading [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
-                    wget.download(x)
+                    wget.download(x, out='Reddit/%s' % filename)
                 else:
                     print(' Skipping [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
 
             elif type(x) == list: #album
                 try:
-                    wget.os.mkdir(x[0])
+                    wget.os.mkdir('./Reddit/' + x[0])
                 except:
                     pass
                 for y in x[1]:
-                    folder = x[0] + '/' 
+                    folder = './Reddit/' + x[0] + '/' 
                     filename = str(x[1].index(y) + 1) + ' - ' + y.split('/')[-1]
                     output = folder + filename
                     if not filename in wget.os.listdir(folder):
@@ -200,4 +225,4 @@ class Reddit(object):
 # removelink(links)
 # fiximgur(links)
 # fixerosh(links)
-arnel = Reddit('hotwife', 30)
+arnel = Reddit()
