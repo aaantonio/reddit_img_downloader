@@ -219,11 +219,15 @@ class Reddit(object):
                     self.links[self.links.index(x)] = x.replace('.webm', '.mp4')
             else:
                 pass
+    
+    # -------------------------------------------------- #
 
-    def downloadlink(self):
+    def downloadlink(self, links=0):
         '''
         This will download links
         '''
+        if links == 0:
+            links = self.links
         try:
             wget.os.mkdir('./Reddit')
         except:
@@ -280,6 +284,16 @@ class Reddit(object):
                             print(' ERROR - Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
                     else:
                         print(' Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
+
+    def download(*args):
+        
+        if len(args) < 1:
+            self.downloadlink()
+        elif 'imgur' in args:
+            imgurlink = self.fiximgur()
+
+
+
 
 # links = start()
 # removelink(links)
