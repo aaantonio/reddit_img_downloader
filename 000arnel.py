@@ -71,6 +71,7 @@ class Reddit(object):
                     print ('delete: ' + x)
                     self.deletedlinks.append(x)
                     self.links.remove(x)
+        self.links = list(set(self.links))
 
     # -------------------------------------------------- #
 
@@ -135,27 +136,54 @@ class Reddit(object):
                     self.links.remove(self.links.index(x))
         pass
 
+    # -------------------------------------------------- #
+    def fixgfycat(self):
+        '''
+        This will fix gfycat links
+        '''
+
+        for x in self.links:
+            if 'gfycat' in x and not any(y in x for y in ['mp4','gif','webm','gifv', 'giant']):
+                try:
+                    print('Processing:', x)
+                    link = x.replace('gfycat.com/', 'gfycat.com/cajax/get/')
+                    r = requests.get(link)
+                    j = json.loads(r.text)
+                    self.links[self.links.index(x)] = j['gfyItem']['mp4Url']
+
+                except:
+                    print('remove:', x)
+                    self.links.remove(self.links.index(x))
+
+
+    # -------------------------------------------------- #
     def fiximgur(self):
         '''
         This will fix imgur links
         '''
         headers = {'Authorization': 'Client-ID 3d8f01808063b93'}
 
-        validlinks = ['/a/','/gallery/','.webm','.gif','.gifv','.png','.jpg']
-
+        validlinks = ['.webm','.gif','.gifv','.png','.jpg']
+        imguralbum = ['/a/','/gallery/']
         for x in self.links:
-            if 'imgur'in x and not any(y in x for y in validlinks):
+            if 'imgur'in x and \
+                    not any(x.endswith(y) for y in validlinks) and \
+                    not any(y in x for y in imguralbum):
                 if x[-1] == '/':
                     x1 = x[:-1]
                 else:
                     x1 = x
                 id = x1.split('/')[-1]
+                if '.' in id:
+                    id = id.split('.')[0]
                 url = 'https://api.imgur.com/3/image/%s' % id
-                print('processing:', url)
-                r = requests.get(url, headers=headers)
-                j = json.loads(r.text)
+                print('image processing:', url)
+
                 try:
+                    r = requests.get(url, headers=headers)
+                    j = json.loads(r.text)
                     self.links[self.links.index(x)] = j['data']['link']
+
                 except:
                     print('image remove:',x)
                     self.links.remove(x)
@@ -166,14 +194,18 @@ class Reddit(object):
                 else:
                     x1 = x
                 id = x1.split('/')[-1]
+                if '.' in id:
+                    id = id.split('.')[0]
                 url = 'https://api.imgur.com/3/album/%s' % id
-                print('processing:', url)
-                r = requests.get(url, headers=headers)
-                j = json.loads(r.text)
+                print('album processing:', url)
+
                 try:
+                    r = requests.get(url, headers=headers)
+                    j = json.loads(r.text)
                     album_name = j['data']['cover']
                     images = [x['link'] for x in j['data']['images']]
                     self.links[self.links.index(x)] = [album_name, images]
+
                 except:
                     print('album remove:',x)
                     self.links.remove(x)
@@ -197,29 +229,57 @@ class Reddit(object):
         except:
             pass
         for x in self.links:
+
+            filelists = sum([z for x,y,z in wget.os.walk('Reddit')], []) #get all file list and flat list
+
             if type(x) != list: #single file
                 filename = x.split('/')[-1]
-                if not filename in wget.os.listdir('Reddit/.'):
+                if not filename in filelists:
+                    try:
+                        wget.os.mkdir('./Reddit/- new/')
+                    except:
+                        pass
+
+                    try:
+                        wget.os.mkdir('./Reddit/- new/' + self.subreddit)
+                    except:
+                        pass
+
                     print(' Downloading [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
-                    wget.download(x, out='Reddit/%s' % filename)
+                    try:
+                        wget.download(x, out='Reddit/- new/%s/%s' % (self.subreddit, filename))
+                    except:
+                        print(' ERROR - Skipping [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
                 else:
                     print(' Skipping [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
 
             elif type(x) == list: #album
-                try:
-                    wget.os.mkdir('./Reddit/' + x[0])
-                except:
-                    pass
                 for y in x[1]:
-                    folder = './Reddit/' + x[0] + '/' 
+                    folder = './Reddit/- new/' + self.subreddit + '/' + x[0] + '/' 
                     filename = str(x[1].index(y) + 1) + ' - ' + y.split('/')[-1]
                     output = folder + filename
-                    if not filename in wget.os.listdir(folder):
+                    if not filename in filelists:
+
+                        try:
+                            wget.os.mkdir('./Reddit/- new/')
+                        except:
+                            pass
+                        try:
+                            wget.os.mkdir('./Reddit/- new/' + self.subreddit)
+                        except:
+                            pass
+                        try:
+                            wget.os.mkdir('./Reddit/- new/' + self.subreddit + '/' + x[0])
+                        except:
+                            pass
+
                         print(' Downloading [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
-                        wget.download(y, out=output)
+                        try:
+                            wget.download(y, out=output)
+                        except:
+                            print(' ERROR - Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
                     else:
                         print(' Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
-
 
 # links = start()
 # removelink(links)
