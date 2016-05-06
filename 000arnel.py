@@ -21,26 +21,28 @@ class Reddit(object):
     def getsubreddit(self, subreddit=0, limits=0):
 
         if subreddit == 0:
+
+            subreddit = input('Subreddit: ')
+
+        if limits == 0:
             try:
-                subreddit = input('Subreddit: ')
-                r = praw.Reddit(user_agent='Script')
-
-                if limits == 0:
-                    try:
-                        limits = input('Limits: ')
-                        limits = int(limits)
-                    except:
-                        limits = 20
-
-                print('Fetching: %s [%s]' % (subreddit, limits))
-                self.limits = limits
-                self.subreddit = subreddit
-                sub = r.get_subreddit(subreddit).get_hot(limit=limits)
-                links = [x.url for x in sub]
-
+                limits = input('Limits: ')
+                limits = int(limits)
             except:
-                print('\n\nPlease try another subreddit\n')
-                return self.getsubreddit()
+                limits = 20
+
+        try:
+            r = praw.Reddit(user_agent='Script')
+
+            print('Fetching: %s [%s]' % (subreddit, limits))
+            self.limits = limits
+            self.subreddit = subreddit
+            sub = r.get_subreddit(subreddit).get_hot(limit=limits)
+            links = [x.url for x in sub]
+
+        except:
+            print('\n\nPlease try another subreddit\n')
+            return self.getsubreddit()
 
         self.links       = links
         self.origlinks   = self.links[:]
@@ -338,6 +340,7 @@ class Reddit(object):
             else:
                 pass
 
-if __name__ == '__main__':
-    arnel = Reddit()
-    arnel.fixlinks()
+# if __name__ == '__main__':
+#     arnel = Reddit()
+#     arnel.fixlinks()
+    # arnel.downloadlink()
