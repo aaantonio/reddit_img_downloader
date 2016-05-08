@@ -151,7 +151,10 @@ class Reddit(object):
             filelists = sum([z for x,y,z in wget.os.walk('Reddit')], []) #get all file list and flat list
 
             if type(x) != list: #single file
-                filename = x.split('/')[-1]
+                try:
+                    filename = x.split('/')[-1]
+                except:
+                    pass
                 if not filename in filelists:
                     try:
                         wget.os.mkdir('./Reddit/- new/')
@@ -340,7 +343,7 @@ class Reddit(object):
             else:
                 pass
 
-# if __name__ == '__main__':
-#     arnel = Reddit()
-#     arnel.fixlinks()
-    # arnel.downloadlink()
+if __name__ == '__main__':
+    arnel = Reddit()
+    arnel.fixlinks()
+    arnel.downloadlink()
