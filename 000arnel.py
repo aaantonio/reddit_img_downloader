@@ -176,7 +176,7 @@ class Reddit(object):
 
             elif type(x) == list: #album
                 for y in x[1]:
-                    folder = './Reddit/- new/' + self.subreddit + '/' + x[0] + '/' 
+                    folder = './Reddit/- new/' + self.subreddit + '/' + str(x[0]) + '/' 
                     filename = str(x[1].index(y) + 1) + ' - ' + y.split('/')[-1]
                     output = folder + filename
                     if not filename in filelists:
@@ -190,7 +190,7 @@ class Reddit(object):
                         except:
                             pass
                         try:
-                            wget.os.mkdir('./Reddit/- new/' + self.subreddit + '/' + x[0])
+                            wget.os.mkdir('./Reddit/- new/' + self.subreddit + '/' + str(x[0]))
                         except:
                             pass
 
@@ -269,7 +269,7 @@ class Reddit(object):
 
                 except:
                     print('remove:', x)
-                    links.remove(links.index(x))
+                    links.remove(x)
         
         if ret:
             self.links = links
