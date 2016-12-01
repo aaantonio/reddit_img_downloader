@@ -1,76 +1,206 @@
-#!/usr/bin/env python
-import json, praw, requests, wget
+import praw, requests, wget, json
 from bs4 import BeautifulSoup
 
-
-print('\n\n')
-print('This will download all image from subreddit')
-print('\n\n')
-
-# -------------------------------------------------- #
-
 class Reddit(object):
-    def __init__(self, subreddit=0, limits=20):
-        '''
-        This will ask for the subreddit
-            
-        '''
-        self.links        = []
-        self.deletedlinks = []
-        self.subreddit    = subreddit
-        self.limits       = limits
 
-        if self.subreddit == 0:
-            self.subreddit = input('Subreddit: ')
-        if self.limits == 0:
-            self.limits = input('limit: ')
+    def __init__(self, subreddit=0, limits=0):
+
+        self.subreddit = subreddit
+        self.limits = limits
+
+        self.deletedlinks = []
+        self.imgurlinks = []
+        self.eroshlinks = []
+        self.gfycatlinks = []
+
+        self.origlinks = self.getsubreddit(self.subreddit, self.limits)
+
+        self.links = self.origlinks[:]
+        self.removelink()
+
+    def getsubreddit(self, subreddit=0, limits=0):
+
+        if subreddit == 0:
+
+            subreddit = input('Subreddit: ')
+
+        if limits == 0:
+            try:
+                limits = input('Limits: ')
+                limits = int(limits)
+            except:
+                limits = 20
 
         try:
-            self.limits = int(limits)
+            r = praw.Reddit(user_agent='Script', client_id='v7Sx4oloh7Fmrg', client_secret='6csElv6ySE3q1z8vcZLi8uP0in0')
+
+            print('Fetching: %s [%s]' % (subreddit, limits))
+            self.limits = limits
+            self.subreddit = subreddit
+            sub = r.subreddit(subreddit).hot(limit=limits)
+            links = [x.url for x in sub]
+
         except:
-            self.limits = 20
+            print('\n\nPlease try another subreddit\n')
+            return self.getsubreddit()
 
-        print( 'Fetching %s...[%s]' % (self.subreddit, self.limits))
-        self.r = praw.Reddit(user_agent='script')
-        self.sub = self.r.get_subreddit(self.subreddit).get_hot(limit=self.limits)
-        self.links = [x.url for x in self.sub]
-        
-        Reddit.removelink(self)
-
-    def __str__(self):
-        return ('\n').join(self.links)
-    # -------------------------------------------------- #
-
-    def checklinks(self):
-        '''
-        This will check and remove all links
-        '''
-        for x in links:
-            print('checking: ' + x)
-            r = requests.get(x)
-            code = r.status_code
-            if '404' in str(code):
-                print(x + ' is not working')
-                links.remove(x)
+        self.links       = links
+        self.origlinks   = self.links[:]
         return links
 
-    # -------------------------------------------------- #
 
-    def removelink(self):
+    def removelink(self, links = 0):
         '''
-        This will remove links not:
-        eroshare, imgur, gfycat, and not .jpg
+        This will remove links not: eroshare, imgur, gfycat, and not .jpg
         '''
-        validlinks = ['eroshare','imgur', 'gfycat','.jpg','.png','.gif','.gifv']
+        self.deletedlinks = []
 
-        for y in range(5):
-            for x in self.links:
+        if links == 0:
+            links = self.links
+
+        validlinks = [
+                    'eroshare',
+                    'imgur',
+                    'gfycat',
+                    '.jpg',
+                    '.png',
+                    '.gif',
+                    '.gifv']
+
+        i = 0
+        while i <= 10:
+            for x in links:
                 if not any(y in x for y in validlinks):
-                    print ('delete: ' + x)
+                    print ('Deleted: ' + x)
                     self.deletedlinks.append(x)
-                    self.links.remove(x)
+                    links.remove(x)
+            i += 1
 
-    # -------------------------------------------------- #
+        links = list(set(links))
+
+    def fixlinks(self, links=0):
+        if links == 0:
+            links = self.links
+
+        self.fiximgur()
+        self.fixerosh()
+        self.fixgfycat()
+
+    # def getimgur(self):
+    #     if links == 0:
+    #         links = self.links[:]
+
+    #     imgurlinks = []
+
+    #     for x in links:
+    #         if 'imgur' in x:
+    #             imgurlinks.append(x)
+    #     return imgurlinks
+
+    # def geteroshare(self,links=0):
+    #     if links == 0:
+    #         links = self.links[:]
+
+    #     eroshlinks = []
+
+    #     for x in links:
+    #         if 'eroshare' in x:
+    #             eroshlinks.append(x)
+    #     return eroshlinks
+
+    # def getgfycat(self,links=0):
+    #     if links == 0:
+    #         links = self.links[:]
+
+    #     gfycatlinks = []
+
+    #     for x in links:
+    #         if 'gfycat' in x:
+    #             gfycatlinks.append(x)
+    #     return gfycatlinks
+
+    # def fiximgur(self, links=0):
+    #     if links == 0:
+    #         links = self.links[:]
+    #     return links
+    def download(self, *args):
+        for x in args:
+            if 'imgur' in x:
+                self.downloadlink(self.imgurlinks)
+            elif 'erosh' in x:
+                self.downloadlink(self.eroshlinks)
+            elif 'gfycat' in x:
+                self.downloadlink(self.gfycat)
+            else:
+                print('Usage: download(url) url = imgur or erosh or gfycat')
+
+    def downloadlink(self, links=0):
+        '''
+        This will download links
+        '''
+
+        if links == 0:
+            links = self.links
+        try:
+            wget.os.mkdir('./Reddit')
+        except:
+            pass
+
+        for x in links:
+
+            filelists = sum([z for x,y,z in wget.os.walk('Reddit')], []) #get all file list and flat list
+
+            if type(x) != list: #single file
+                try:
+                    filename = x.split('/')[-1]
+                except:
+                    pass
+                if not filename in filelists:
+                    try:
+                        wget.os.mkdir('./Reddit/- new/')
+                    except:
+                        pass
+
+                    try:
+                        wget.os.mkdir('./Reddit/- new/' + self.subreddit)
+                    except:
+                        pass
+
+                    print(' Downloading [%s/%s]: %s' % (links.index(x) + 1, len(links), x))
+                    try:
+                        wget.download(x, out='Reddit/- new/%s/%s' % (self.subreddit, filename))
+                    except:
+                        print(' ERROR - Skipping [%s/%s]: %s' % (links.index(x) + 1, len(links), x))
+                else:
+                    print(' Skipping [%s/%s]: %s' % (links.index(x) + 1, len(links), x))
+
+            elif type(x) == list: #album
+                for y in x[1]:
+                    folder = './Reddit/- new/' + self.subreddit + '/' + str(x[0]) + '/' 
+                    filename = str(x[1].index(y) + 1) + ' - ' + y.split('/')[-1]
+                    output = folder + filename
+                    if not filename in filelists:
+
+                        try:
+                            wget.os.mkdir('./Reddit/- new/')
+                        except:
+                            pass
+                        try:
+                            wget.os.mkdir('./Reddit/- new/' + self.subreddit)
+                        except:
+                            pass
+                        try:
+                            wget.os.mkdir('./Reddit/- new/' + self.subreddit + '/' + str(x[0]))
+                        except:
+                            pass
+
+                        print(' Downloading [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
+                        try:
+                            wget.download(y, out=output)
+                        except:
+                            print(' ERROR - Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
+                    else:
+                        print(' Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
 
     def fixerosh(self):
         '''
@@ -93,8 +223,10 @@ class Reddit(object):
                         if len(mp4list) > 1:
                             album_name = x.split('/')[-1]
                             self.links[self.links.index(x)] = [album_name, mp4list]
+                            self.eroshlinks.append([album_name, mp4list])
                         else:
                             self.links[self.links.index(x)] = mp4list[0]
+                            self.eroshlinks.append(mp4list[0])
 
                     elif 'jpg' in source:
                         for y in soup.find_all('div', {'class':'blurred-bg'}):
@@ -102,39 +234,78 @@ class Reddit(object):
                         if len(imagelist) > 1:
                             album_name = x.split('/')[-1]
                             self.links[self.links.index(x)] = [album_name, imagelist]
+                            self.eroshlinks.append([album_name, imagelist])
                         else:
                             self.links[self.links.index(x)] = imagelist[0]
+                            self.eroshlinks.append(imagelist[0])
 
                     else:
                         self.links.remove(x)
+
                 except:
                     print('remove:', x)
                     self.links.remove(x)
-           
 
     # -------------------------------------------------- #
+    def fixgfycat(self, links=0):
+        '''
+         This will fix gfycat links
+        '''
+        if links == 0:
+            links = self.links[:]
+            ret = True
+        else:
+            ret = False
 
+        for x in links:
+            if 'gfycat' in x and not any(y in x for y in ['mp4','gif','webm','gifv', 'giant']):
+                try:
+                    print('Processing:', x)
+                    link = x.replace('gfycat.com/', 'gfycat.com/cajax/get/')
+                    r = requests.get(link)
+                    j = json.loads(r.text)
+                    links[links.index(x)] = j['gfyItem']['mp4Url']
+                    self.gfycatlinks.append(j['gfyItem']['mp4Url'])
+
+                except:
+                    print('remove:', x)
+                    links.remove(x)
+        
+        if ret:
+            self.links = links
+        else:
+            return links
+
+
+    # -------------------------------------------------- #
     def fiximgur(self):
         '''
         This will fix imgur links
         '''
         headers = {'Authorization': 'Client-ID 3d8f01808063b93'}
 
-        validlinks = ['/a/','/gallery/','.webm','.gif','.gifv','.png','.jpg']
-
+        validlinks = ['.webm','.gif','.gifv','.png','.jpg']
+        imguralbum = ['/a/','/gallery/']
         for x in self.links:
-            if 'imgur'in x and not any(y in x for y in validlinks):
+            if 'imgur'in x and \
+                    not any(x.endswith(y) for y in validlinks) and \
+                    not any(y in x for y in imguralbum):
                 if x[-1] == '/':
                     x1 = x[:-1]
                 else:
                     x1 = x
                 id = x1.split('/')[-1]
+                if '.' in id:
+                    id = id.split('.')[0]
                 url = 'https://api.imgur.com/3/image/%s' % id
-                print('processing:', url)
-                r = requests.get(url, headers=headers)
-                j = json.loads(r.text)
+                print('image processing:', url)
+
                 try:
+                    r = requests.get(url, headers=headers)
+                    j = json.loads(r.text)
                     self.links[self.links.index(x)] = j['data']['link']
+                    self.imgurlinks.append(j['data']['link'])
+
                 except:
                     print('image remove:',x)
                     self.links.remove(x)
@@ -145,14 +316,19 @@ class Reddit(object):
                 else:
                     x1 = x
                 id = x1.split('/')[-1]
+                if '.' in id:
+                    id = id.split('.')[0]
                 url = 'https://api.imgur.com/3/album/%s' % id
-                print('processing:', url)
-                r = requests.get(url, headers=headers)
-                j = json.loads(r.text)
+                print('album processing:', url)
+
                 try:
+                    r = requests.get(url, headers=headers)
+                    j = json.loads(r.text)
                     album_name = j['data']['cover']
                     images = [x['link'] for x in j['data']['images']]
                     self.links[self.links.index(x)] = [album_name, images]
+                    self.imgurlinks.append([album_name, images])
+
                 except:
                     print('album remove:',x)
                     self.links.remove(x)
@@ -167,37 +343,7 @@ class Reddit(object):
             else:
                 pass
 
-    def downloadlink(self):
-        '''
-        This will download links
-        '''
-        for x in self.links:
-            if type(x) != list: #single file
-                filename = x.split('/')[-1]
-                if not filename in wget.os.listdir('.'):
-                    print(' Downloading [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
-                    wget.download(x)
-                else:
-                    print(' Skipping [%s/%s]: %s' % (self.links.index(x) + 1, len(self.links), x))
-
-            elif type(x) == list: #album
-                try:
-                    wget.os.mkdir(x[0])
-                except:
-                    pass
-                for y in x[1]:
-                    folder = x[0] + '/' 
-                    filename = str(x[1].index(y) + 1) + ' - ' + y.split('/')[-1]
-                    output = folder + filename
-                    if not filename in wget.os.listdir(folder):
-                        print(' Downloading [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
-                        wget.download(y, out=output)
-                    else:
-                        print(' Skipping [%s] - [%s/%s]: %s' % (x[0], x[1].index(y) + 1, len(x[1]), y))
-
-
-# links = start()
-# removelink(links)
-# fiximgur(links)
-# fixerosh(links)
-arnel = Reddit('hotwife', 30)
+if __name__ == '__main__':
+    arnel = Reddit()
+    arnel.fixlinks()
+    arnel.downloadlink()
