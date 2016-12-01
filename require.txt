@@ -1,0 +1,9 @@
+beautifulsoup4==4.5.1
+bs4==0.0.1
+decorator==4.0.10
+praw==4.0.0
+prawcore==0.3.0
+requests==2.12.3
+six==1.10.0
+update-checker==0.15
+wget==3.2
