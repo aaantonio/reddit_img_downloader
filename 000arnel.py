@@ -32,12 +32,12 @@ class Reddit(object):
                 limits = 20
 
         try:
-            r = praw.Reddit(user_agent='Script')
+            r = praw.Reddit(user_agent='Script', client_id='v7Sx4oloh7Fmrg', client_secret='6csElv6ySE3q1z8vcZLi8uP0in0')
 
             print('Fetching: %s [%s]' % (subreddit, limits))
             self.limits = limits
             self.subreddit = subreddit
-            sub = r.get_subreddit(subreddit).get_hot(limit=limits)
+            sub = r.subreddit(subreddit).hot(limit=limits)
             links = [x.url for x in sub]
 
         except:
